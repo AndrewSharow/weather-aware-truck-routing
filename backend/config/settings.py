@@ -38,6 +38,13 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES: dict = {}
 
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "OPTIONS": {"MAX_ENTRIES": 20_000},
+    }
+}
+
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
 
 REST_FRAMEWORK = {

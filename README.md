@@ -6,9 +6,8 @@ weather, load weight and travel time.
 > Planning aid only. It does not guarantee that a route is safe or legally
 > compliant.
 
-**Status:** in progress. Risk classification, route recommendation and
-checkpoint sampling, the HERE client and the Open-Meteo client are done and
-tested; the `/api/plan` endpoint is next.
+**Status:** in progress. Backend logic and API clients are done and tested;
+the `/api/plan` endpoint is next.
 
 ## What it does
 
@@ -52,47 +51,16 @@ No Travel · 35–44 mph and load >40,000 lb → Severe.
 Recommendation order: fewest Severe miles → fewest High miles → lowest average
 risk → shortest travel time.
 
-## Decisions
+## Key decisions
 
-- **Wind:** sustained wind is used for the rules; gusts are shown as info only.
-- **Edges:** lower bound is inclusive (rain 0.25 → High, snow 1.0 → High).
-  No Travel for rain and snow is strictly `>` as in the table, so rain 1.00
-  and snow 3.0 are Severe.
-- **Checkpoint risk** = the worst of wind / rain / snow, after load rules.
-- **Rain / snow rate:** Open-Meteo gives the amount that falls in each hour.
-  That amount is the average rate for that hour (in/hr). Rain = `rain` +
-  `showers` (Open-Meteo splits large-scale rain and convective showers).
-- **Weather lookup:** each checkpoint uses the forecast hour nearest to its
-  ETA. Points are rounded to a 0.1° grid (~7 mi) and each grid cell is
-  requested once, in batches of 100 locations.
-- **Checkpoints:** placed every N miles from the origin, plus one at the
-  destination. Each checkpoint covers the miles since the previous one
-  (the last one covers the remainder).
-- **ETA:** departure + HERE's travel time up to that point. HERE returns
-  travel time per stretch of road (`spans=duration,functionalClass`: a new
-  span starts when the road type changes, e.g. city street → highway), so
-  slow and fast parts get correct ETAs; inside a span, time is split by
-  distance.
-- **Geocoding:** USA only, best match. Matches with a HERE `queryScore`
-  below 0.7 are treated as "place not found" (e.g. random text).
-- **Miles at a level:** each checkpoint's covered miles count at its level.
+- **Wind:** sustained wind; gusts shown as info only.
+- **Edges:** lower bound inclusive (rain 0.25 → High); rain 1.00 and
+  snow 3.0 are Severe (No Travel is strictly `>`).
+- **Checkpoint risk:** the worst of wind / rain / snow, after load rules.
+- **Miles at a level:** each checkpoint covers the miles since the previous one.
 - **Average risk:** Low=0 … No Travel=4, weighted by miles.
-- **No Travel:** a route with any No Travel miles is never recommended if
-  another route has none. It is shown with a warning.
-- **Ranking:** No Travel miles → Severe miles → High miles → average risk →
-  travel time. Miles are compared rounded to 0.1 mi. The first rule that
-  separates the best route from the runner-up is shown as the reason
-  (e.g. "Fewest Severe miles"). A full tie keeps HERE's order.
-- **Unknown miles** are reported per route but are not part of the ranking;
-  the average risk uses known miles only.
-- **Weight:** the risk rules use the **load**. HERE needs the **gross**
-  vehicle weight, so we send load + 35,000 lb (assumed empty tractor-trailer).
-  Max load is 45,000 lb, so gross stays ≤ 80,000 lb.
-- **Forecast range:** departure up to 7 days ahead. Open-Meteo forecasts
-  ~15 days; hours past that or without data are shown as **unknown**
-  (grey), never as Low.
-- **Heatmap slider:** hour 0 = departure time.
-- **Time:** UTC in the backend; the UI shows the browser's timezone.
+- **No Travel:** never recommended if another route has none.
+- **Missing weather:** shown as unknown, never as Low.
 
 ## Run locally
 

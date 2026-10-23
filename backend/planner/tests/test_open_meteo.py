@@ -5,6 +5,7 @@ from typing import Any
 from unittest.mock import Mock, patch
 
 import requests
+from django.core.cache import cache
 from django.test import SimpleTestCase
 
 from planner.clients.open_meteo import (
@@ -50,6 +51,9 @@ class HelperTests(SimpleTestCase):
 
 @patch("planner.clients.open_meteo.requests.get")
 class FetchForecastTests(SimpleTestCase):
+    def setUp(self) -> None:
+        cache.clear()
+
     def fetch(self, points: list[tuple[float, float]] = POINTS) -> Any:
         return fetch_forecast(points, START, END, now=NOW)
 
@@ -69,8 +73,8 @@ class FetchForecastTests(SimpleTestCase):
         self.assertEqual(params["wind_speed_unit"], "mph")
         self.assertEqual(params["precipitation_unit"], "inch")
         self.assertEqual(params["timezone"], "GMT")
-        self.assertEqual(params["start_hour"], "2026-10-24T13:00")
-        self.assertEqual(params["end_hour"], "2026-10-24T15:00")
+        self.assertEqual(params["start_hour"], "2026-10-24T00:00")
+        self.assertEqual(params["end_hour"], "2026-10-24T23:00")
 
     def test_rain_includes_showers(self, get: Mock) -> None:
         body = location(
@@ -124,6 +128,22 @@ class FetchForecastTests(SimpleTestCase):
         end_hour = get.call_args.kwargs["params"]["end_hour"]
         self.assertEqual(end_hour, "2026-11-07T20:00")
 
+    def test_second_request_uses_cache(self, get: Mock) -> None:
+        get.return_value = response(three_points())
+        self.fetch()
+        forecast = self.fetch()
+        self.assertEqual(get.call_count, 1)
+        self.assertIsNotNone(forecast.at(POINTS[0], START).wind_mph)
+
+    def test_only_missing_cells_are_fetched(self, get: Mock) -> None:
+        get.return_value = response(three_points()[0])
+        self.fetch([POINTS[0]])
+        get.return_value = response(three_points()[1:])
+        forecast = self.fetch()
+        self.assertEqual(get.call_count, 2)
+        self.assertEqual(get.call_args.kwargs["params"]["latitude"], "31.5,29.8")
+        self.assertIsNotNone(forecast.at(POINTS[2], START).wind_mph)
+
     def test_window_fully_past_horizon_skips_request(self, get: Mock) -> None:
         start = NOW + timedelta(days=20)
         forecast = fetch_forecast(POINTS, start, start + timedelta(hours=5), now=NOW)
@@ -133,6 +153,9 @@ class FetchForecastTests(SimpleTestCase):
 
 @patch("planner.clients.open_meteo.requests.get")
 class FailureTests(SimpleTestCase):
+    def setUp(self) -> None:
+        cache.clear()
+
     def assert_unavailable(self) -> None:
         with self.assertRaises(PlannerError) as error:
             fetch_forecast(POINTS, START, END, now=NOW)

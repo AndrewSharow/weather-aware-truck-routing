@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import requests
+from django.core.cache import cache
 
 from planner.errors import PlannerError
 from planner.risk import Weather
@@ -13,6 +14,7 @@ HOURLY_FIELDS = ["wind_speed_10m", "wind_gusts_10m", "rain", "showers", "snowfal
 TIMEOUT_S = 20
 BATCH_SIZE = 100
 FORECAST_HORIZON = timedelta(days=15)
+CACHE_SECONDS = 3600
 HOUR_FORMAT = "%Y-%m-%dT%H:%M"
 
 
@@ -54,19 +56,30 @@ def fetch_forecast(
     points: list[Point], start: datetime, end: datetime, now: datetime | None = None
 ) -> Forecast:
     now = now or datetime.now(UTC)
-    first_hour = floor_hour(start)
-    last_hour = min(nearest_hour(end), floor_hour(now + FORECAST_HORIZON))
+    first_hour = floor_hour(start).replace(hour=0)
+    last_hour = min(
+        nearest_hour(end).replace(hour=23), floor_hour(now + FORECAST_HORIZON)
+    )
     if first_hour > last_hour:
         return Forecast()
 
     cells = list(dict.fromkeys(grid_cell(point) for point in points))
-    by_cell: dict[Point, dict[datetime, HourlyWeather]] = {}
-    for i in range(0, len(cells), BATCH_SIZE):
-        batch = cells[i : i + BATCH_SIZE]
+    keys = {cell: cache_key(cell, first_hour, last_hour) for cell in cells}
+    cached = cache.get_many(keys.values())
+    by_cell = {cell: cached[key] for cell, key in keys.items() if key in cached}
+
+    missing = [cell for cell in cells if cell not in by_cell]
+    for i in range(0, len(missing), BATCH_SIZE):
+        batch = missing[i : i + BATCH_SIZE]
         locations = fetch_batch(batch, first_hour, last_hour)
         for cell, location in zip(batch, locations):
             by_cell[cell] = parse_hourly(location["hourly"])
+            cache.set(keys[cell], by_cell[cell], CACHE_SECONDS)
     return Forecast(by_cell)
+
+
+def cache_key(cell: Point, first_hour: datetime, last_hour: datetime) -> str:
+    return f"open-meteo:{cell[0]}:{cell[1]}:{first_hour:%Y%m%d%H}:{last_hour:%Y%m%d%H}"
 
 
 def fetch_batch(
