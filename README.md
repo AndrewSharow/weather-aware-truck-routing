@@ -7,7 +7,8 @@ weather, load weight and travel time.
 > compliant.
 
 **Status:** in progress. Risk classification, route recommendation and
-checkpoint sampling are done and tested; API clients are next.
+checkpoint sampling and the HERE client are done and tested; the weather
+client is next.
 
 ## What it does
 
@@ -63,9 +64,13 @@ risk → shortest travel time.
 - **Checkpoints:** placed every N miles from the origin, plus one at the
   destination. Each checkpoint covers the miles since the previous one
   (the last one covers the remainder).
-- **ETA:** departure + HERE's travel time up to that point. HERE gives time
-  per stretch of road (span), so slow city parts and fast highway parts get
-  correct ETAs; inside a span, time is split by distance.
+- **ETA:** departure + HERE's travel time up to that point. HERE returns
+  travel time per stretch of road (`spans=duration,functionalClass`: a new
+  span starts when the road type changes, e.g. city street → highway), so
+  slow and fast parts get correct ETAs; inside a span, time is split by
+  distance.
+- **Geocoding:** USA only, best match. Matches with a HERE `queryScore`
+  below 0.7 are treated as "place not found" (e.g. random text).
 - **Miles at a level:** each checkpoint's covered miles count at its level.
 - **Average risk:** Low=0 … No Travel=4, weighted by miles.
 - **No Travel:** a route with any No Travel miles is never recommended if
@@ -109,5 +114,4 @@ Tests: `python manage.py test`
 
 ## Limitations
 
-- HERE may return fewer than 3 routes for some trips.
 - Forecasts get less accurate further ahead.

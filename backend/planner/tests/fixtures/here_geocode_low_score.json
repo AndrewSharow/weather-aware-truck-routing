@@ -1,0 +1,37 @@
+{
+ "items": [
+  {
+   "title": "Nowhere, Fort Cobb, OK, United States",
+   "id": "here:cm:poi:33802506",
+   "resultType": "locality",
+   "localityType": "district",
+   "address": {
+    "label": "Nowhere, Fort Cobb, OK, United States",
+    "countryCode": "USA",
+    "countryName": "United States",
+    "stateCode": "OK",
+    "state": "Oklahoma",
+    "county": "Caddo",
+    "city": "Fort Cobb",
+    "district": "Nowhere",
+    "postalCode": "73038"
+   },
+   "position": {
+    "lat": 35.15673,
+    "lng": -98.44252
+   },
+   "mapView": {
+    "west": -98.44253,
+    "south": 35.15278,
+    "east": -98.44251,
+    "north": 35.16068
+   },
+   "scoring": {
+    "queryScore": 0.39,
+    "fieldScore": {
+     "district": 1.0
+    }
+   }
+  }
+ ]
+}
