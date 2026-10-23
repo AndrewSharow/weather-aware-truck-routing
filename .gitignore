@@ -1,0 +1,26 @@
+# Private notes (kept local, not for the reviewer)
+CLAUDE.md
+docs/STATUS.md
+docs/PLAN.md
+docs/*.pdf
+.claude/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+db.sqlite3
+
+# Node
+node_modules/
+dist/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
