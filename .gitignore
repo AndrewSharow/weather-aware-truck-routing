@@ -1,8 +1,6 @@
-# Private notes (kept local, not for the reviewer)
+# Local notes
 CLAUDE.md
-docs/STATUS.md
-docs/PLAN.md
-docs/*.pdf
+docs/
 .claude/
 
 # Secrets
