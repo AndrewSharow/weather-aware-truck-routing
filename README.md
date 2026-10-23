@@ -6,8 +6,8 @@ weather, load weight and travel time.
 > Planning aid only. It does not guarantee that a route is safe or legally
 > compliant.
 
-**Status:** in progress. Risk classification and route recommendation are
-done and tested; route sampling and API clients are next.
+**Status:** in progress. Risk classification, route recommendation and
+checkpoint sampling are done and tested; API clients are next.
 
 ## What it does
 
@@ -60,7 +60,13 @@ risk → shortest travel time.
 - **Checkpoint risk** = the worst of wind / rain / snow, after load rules.
 - **Rain / snow rate:** Open-Meteo gives the amount that falls in each hour.
   That amount is the average rate for that hour (in/hr).
-- **Miles at a level:** each checkpoint covers its interval segment.
+- **Checkpoints:** placed every N miles from the origin, plus one at the
+  destination. Each checkpoint covers the miles since the previous one
+  (the last one covers the remainder).
+- **ETA:** departure + HERE's travel time up to that point. HERE gives time
+  per stretch of road (span), so slow city parts and fast highway parts get
+  correct ETAs; inside a span, time is split by distance.
+- **Miles at a level:** each checkpoint's covered miles count at its level.
 - **Average risk:** Low=0 … No Travel=4, weighted by miles.
 - **No Travel:** a route with any No Travel miles is never recommended if
   another route has none. It is shown with a warning.
