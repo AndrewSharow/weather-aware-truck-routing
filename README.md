@@ -6,8 +6,8 @@ weather, load weight and travel time.
 > Planning aid only. It does not guarantee that a route is safe or legally
 > compliant.
 
-**Status:** in progress. Backend logic and API clients are done and tested;
-the `/api/plan` endpoint is next.
+**Status:** in progress. The backend API works end to end and is tested;
+the frontend is next.
 
 ## What it does
 
@@ -83,7 +83,21 @@ Tests: `python manage.py test`
 
 `GET /api/health` — server check.
 
-`POST /api/plan` — coming next.
+`POST /api/plan` — plans a trip.
+
+```json
+{ "origin": "Chicago, IL", "destination": "Denver, CO",
+  "departure": "2026-10-24T13:00:00Z", "load_lb": 42000, "interval_mi": 25 }
+```
+
+Returns the geocoded places, up to 3 routes (line, distance, time,
+checkpoints with ETA, weather and risk, risk summary), the recommended route
+with the reason, and the heatmap (grid points × 49 hourly risk values,
+hour 0 = departure).
+
+Errors: `{"error": "<code>", "message": "..."}` — `invalid_input` (400, plus
+`fields`), `place_not_found` / `no_route` (404), `routing_unavailable` /
+`weather_unavailable` / `weather_rate_limited` (502).
 
 ## Limitations
 
