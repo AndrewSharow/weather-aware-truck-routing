@@ -32,7 +32,7 @@ checkpoint interval (10 / 25 / 50 miles). The app:
 | Map | MapLibre GL JS (`react-map-gl`) + OpenFreeMap tiles |
 | Routing + geocoding | HERE Routing API v8 (truck mode) + HERE Geocoding & Search |
 | Weather | Open-Meteo hourly forecast |
-| Hosting | Railway (backend), Vercel (frontend) |
+| Hosting | Railway (backend and frontend as two services) |
 
 All external API calls go through the backend, so the HERE key never reaches
 the browser.
