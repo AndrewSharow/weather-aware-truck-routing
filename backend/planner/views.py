@@ -1,3 +1,6 @@
+import logging
+import time
+
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
@@ -6,6 +9,8 @@ from rest_framework.response import Response
 from planner.errors import PlannerError
 from planner.plan import plan_trip
 from planner.serializers import parse_plan_request
+
+logger = logging.getLogger(__name__)
 
 
 @api_view(["GET"])
@@ -27,9 +32,15 @@ def plan(request: Request) -> Response:
             status=400,
         )
 
+    started = time.monotonic()
+    trip = f"{plan_request.origin} -> {plan_request.destination}"
     try:
-        return Response(plan_trip(plan_request))
+        result = plan_trip(plan_request)
     except PlannerError as error:
+        logger.info("Plan %s failed: %s", trip, error.code)
         return Response(
             {"error": error.code, "message": error.message}, status=error.status
         )
+    seconds = time.monotonic() - started
+    logger.info("Plan %s: %d routes in %.1fs", trip, len(result["routes"]), seconds)
+    return Response(result)

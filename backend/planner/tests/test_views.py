@@ -26,7 +26,9 @@ class PlanViewTests(SimpleTestCase):
 
     def test_returns_plan(self, plan_trip: Mock) -> None:
         plan_trip.return_value = {"routes": [], "recommended_route_id": "A"}
-        response = self.post(body())
+        with self.assertLogs("planner.views", "INFO") as logs:
+            response = self.post(body())
+        self.assertIn("Chicago, IL -> Denver, CO: 0 routes", logs.output[0])
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["recommended_route_id"], "A")
         self.assertEqual(plan_trip.call_args.args[0].origin, "Chicago, IL")
@@ -42,7 +44,9 @@ class PlanViewTests(SimpleTestCase):
 
     def test_planner_error(self, plan_trip: Mock) -> None:
         plan_trip.side_effect = PlannerError("place_not_found", "Place not found", 404)
-        response = self.post(body())
+        with self.assertLogs("planner.views", "INFO") as logs:
+            response = self.post(body())
+        self.assertIn("failed: place_not_found", logs.output[0])
         self.assertEqual(response.status_code, 404)
         self.assertEqual(
             response.json(), {"error": "place_not_found", "message": "Place not found"}
