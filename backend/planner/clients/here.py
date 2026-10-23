@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -8,6 +9,8 @@ from django.conf import settings
 
 from planner.errors import PlannerError
 from planner.sampling import Point
+
+logger = logging.getLogger(__name__)
 
 GEOCODE_URL = "https://geocode.search.hereapi.com/v1/geocode"
 ROUTES_URL = "https://router.hereapi.com/v8/routes"
@@ -103,9 +106,11 @@ def get_json(url: str, params: dict[str, Any]) -> dict[str, Any]:
         response = requests.get(
             url, params={**params, "apiKey": settings.HERE_API_KEY}, timeout=TIMEOUT_S
         )
-    except requests.RequestException:
+    except requests.RequestException as error:
+        logger.warning("HERE request failed: %s", type(error).__name__)
         raise routing_unavailable() from None
     if response.status_code != 200:
+        logger.warning("HERE returned status %s", response.status_code)
         raise routing_unavailable()
     return response.json()
 

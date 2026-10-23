@@ -96,28 +96,31 @@ class TruckRoutesTests(SimpleTestCase):
 @override_settings(HERE_API_KEY=API_KEY)
 @patch("planner.clients.here.requests.get")
 class FailureTests(SimpleTestCase):
-    def assert_unavailable(self) -> None:
-        with self.assertRaises(PlannerError) as error:
-            geocode("Dallas, TX")
+    def assert_unavailable(self) -> str:
+        with self.assertLogs("planner.clients.here", "WARNING") as logs:
+            with self.assertRaises(PlannerError) as error:
+                geocode("Dallas, TX")
         self.assertEqual(error.exception.code, "routing_unavailable")
         self.assertEqual(error.exception.status, 502)
         self.assertNotIn(API_KEY, error.exception.message)
+        self.assertNotIn(API_KEY, "".join(logs.output))
+        return logs.output[0]
 
     def test_timeout(self, get: Mock) -> None:
         get.side_effect = requests.Timeout(f"timed out apiKey={API_KEY}")
-        self.assert_unavailable()
+        self.assertIn("Timeout", self.assert_unavailable())
 
     def test_connection_error(self, get: Mock) -> None:
         get.side_effect = requests.ConnectionError(f"failed apiKey={API_KEY}")
-        self.assert_unavailable()
+        self.assertIn("ConnectionError", self.assert_unavailable())
 
     def test_server_error(self, get: Mock) -> None:
         get.return_value = response({"error": "boom"}, status=500)
-        self.assert_unavailable()
+        self.assertIn("500", self.assert_unavailable())
 
     def test_unauthorized(self, get: Mock) -> None:
         get.return_value = response({"error": "Unauthorized"}, status=401)
-        self.assert_unavailable()
+        self.assertIn("401", self.assert_unavailable())
 
 
 class GrossWeightTests(SimpleTestCase):

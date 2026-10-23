@@ -156,24 +156,39 @@ class FailureTests(SimpleTestCase):
     def setUp(self) -> None:
         cache.clear()
 
-    def assert_unavailable(self) -> None:
-        with self.assertRaises(PlannerError) as error:
-            fetch_forecast(POINTS, START, END, now=NOW)
-        self.assertEqual(error.exception.code, "weather_unavailable")
+    def fetch_error(self) -> tuple[PlannerError, str]:
+        with self.assertLogs("planner.clients.open_meteo", "WARNING") as logs:
+            with self.assertRaises(PlannerError) as error:
+                fetch_forecast(POINTS, START, END, now=NOW)
         self.assertEqual(error.exception.status, 502)
+        return error.exception, logs.output[0]
+
+    def assert_unavailable(self, logged: str) -> None:
+        error, log = self.fetch_error()
+        self.assertEqual(error.code, "weather_unavailable")
+        self.assertIn(logged, log)
 
     def test_timeout(self, get: Mock) -> None:
         get.side_effect = requests.Timeout()
-        self.assert_unavailable()
+        self.assert_unavailable("Timeout")
 
     def test_server_error(self, get: Mock) -> None:
         get.return_value = response({"error": True}, status=500)
-        self.assert_unavailable()
+        self.assert_unavailable("500")
 
     def test_bad_request(self, get: Mock) -> None:
         get.return_value = response({"error": True, "reason": "out of range"}, 400)
-        self.assert_unavailable()
+        self.assert_unavailable("400")
+
+    def test_rate_limited(self, get: Mock) -> None:
+        get.return_value = response({"error": True}, status=429)
+        error, log = self.fetch_error()
+        self.assertEqual(error.code, "weather_rate_limited")
+        self.assertIn("busy", error.message)
+        self.assertIn("429", log)
 
     def test_wrong_number_of_locations(self, get: Mock) -> None:
         get.return_value = response(three_points()[:2])
-        self.assert_unavailable()
+        with self.assertRaises(PlannerError) as error:
+            fetch_forecast(POINTS, START, END, now=NOW)
+        self.assertEqual(error.exception.code, "weather_unavailable")

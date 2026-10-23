@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -8,6 +9,8 @@ from django.core.cache import cache
 from planner.errors import PlannerError
 from planner.risk import Weather
 from planner.sampling import Point
+
+logger = logging.getLogger(__name__)
 
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 HOURLY_FIELDS = ["wind_speed_10m", "wind_gusts_10m", "rain", "showers", "snowfall"]
@@ -97,9 +100,13 @@ def fetch_batch(
     }
     try:
         response = requests.get(FORECAST_URL, params=params, timeout=TIMEOUT_S)
-    except requests.RequestException:
+    except requests.RequestException as error:
+        logger.warning("Open-Meteo request failed: %s", type(error).__name__)
         raise weather_unavailable() from None
     if response.status_code != 200:
+        logger.warning("Open-Meteo returned status %s", response.status_code)
+        if response.status_code == 429:
+            raise weather_rate_limited()
         raise weather_unavailable()
 
     data = response.json()
@@ -125,6 +132,12 @@ def parse_hourly(hourly: dict[str, list[Any]]) -> dict[datetime, HourlyWeather]:
 
 def add(a: float | None, b: float | None) -> float | None:
     return None if a is None or b is None else a + b
+
+
+def weather_rate_limited() -> PlannerError:
+    return PlannerError(
+        "weather_rate_limited", "Weather service is busy. Try again in a minute.", 502
+    )
 
 
 def weather_unavailable() -> PlannerError:
