@@ -6,7 +6,8 @@ weather, load weight and travel time.
 > Planning aid only. It does not guarantee that a route is safe or legally
 > compliant.
 
-**Status:** in progress. Backend scaffold is done; risk logic is next.
+**Status:** in progress. Risk classification and route recommendation are
+done and tested; route sampling and API clients are next.
 
 ## What it does
 
@@ -63,6 +64,12 @@ risk → shortest travel time.
 - **Average risk:** Low=0 … No Travel=4, weighted by miles.
 - **No Travel:** a route with any No Travel miles is never recommended if
   another route has none. It is shown with a warning.
+- **Ranking:** No Travel miles → Severe miles → High miles → average risk →
+  travel time. Miles are compared rounded to 0.1 mi. The first rule that
+  separates the best route from the runner-up is shown as the reason
+  (e.g. "Fewest Severe miles"). A full tie keeps HERE's order.
+- **Unknown miles** are reported per route but are not part of the ranking;
+  the average risk uses known miles only.
 - **Weight:** the risk rules use the **load**. HERE needs the **gross**
   vehicle weight, so we send load + 35,000 lb (assumed empty tractor-trailer).
   Max load is 45,000 lb, so gross stays ≤ 80,000 lb.
