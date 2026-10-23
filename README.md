@@ -7,8 +7,8 @@ weather, load weight and travel time.
 > compliant.
 
 **Status:** in progress. Risk classification, route recommendation and
-checkpoint sampling and the HERE client are done and tested; the weather
-client is next.
+checkpoint sampling, the HERE client and the Open-Meteo client are done and
+tested; the `/api/plan` endpoint is next.
 
 ## What it does
 
@@ -60,7 +60,11 @@ risk → shortest travel time.
   and snow 3.0 are Severe.
 - **Checkpoint risk** = the worst of wind / rain / snow, after load rules.
 - **Rain / snow rate:** Open-Meteo gives the amount that falls in each hour.
-  That amount is the average rate for that hour (in/hr).
+  That amount is the average rate for that hour (in/hr). Rain = `rain` +
+  `showers` (Open-Meteo splits large-scale rain and convective showers).
+- **Weather lookup:** each checkpoint uses the forecast hour nearest to its
+  ETA. Points are rounded to a 0.1° grid (~7 mi) and each grid cell is
+  requested once, in batches of 100 locations.
 - **Checkpoints:** placed every N miles from the origin, plus one at the
   destination. Each checkpoint covers the miles since the previous one
   (the last one covers the remainder).
@@ -84,8 +88,9 @@ risk → shortest travel time.
 - **Weight:** the risk rules use the **load**. HERE needs the **gross**
   vehicle weight, so we send load + 35,000 lb (assumed empty tractor-trailer).
   Max load is 45,000 lb, so gross stays ≤ 80,000 lb.
-- **Forecast range:** departure up to 7 days ahead. Hours without forecast
-  data are shown as **unknown** (grey), never as Low.
+- **Forecast range:** departure up to 7 days ahead. Open-Meteo forecasts
+  ~15 days; hours past that or without data are shown as **unknown**
+  (grey), never as Low.
 - **Heatmap slider:** hour 0 = departure time.
 - **Time:** UTC in the backend; the UI shows the browser's timezone.
 
