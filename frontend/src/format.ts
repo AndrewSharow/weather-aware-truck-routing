@@ -36,11 +36,15 @@ export function localInputToUtcIso(value: string): string {
   return new Date(value).toISOString()
 }
 
+export function toLocalInputValue(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const day = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+  return `${day}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 export function defaultDepartureInput(now: Date = new Date()): string {
   const next = new Date(now)
   next.setMinutes(0, 0, 0)
   next.setHours(next.getHours() + 1)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  const date = `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}`
-  return `${date}T${pad(next.getHours())}:00`
+  return toLocalInputValue(next)
 }

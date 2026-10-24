@@ -8,9 +8,17 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { defaultDepartureInput } from '@/format'
 import { buildPlanRequest, type PlanFormValues } from '@/plan-request'
 import type { IntervalMiles, PlanRequest } from '@/types'
+import { MAX_LOAD_LB, departureInputLimits, validatePlanForm } from '@/validate'
 
 const INTERVALS: IntervalMiles[] = [10, 25, 50]
-const MAX_LOAD_LB = 45_000
+
+const ERROR_KEYS: Record<keyof PlanFormValues, string> = {
+  origin: 'origin',
+  destination: 'destination',
+  departure: 'departure',
+  loadLb: 'load_lb',
+  intervalMi: 'interval_mi',
+}
 
 interface PlanFormProps {
   loading: boolean
@@ -26,32 +34,46 @@ export function PlanForm({ loading, fieldErrors, onSubmit }: PlanFormProps) {
     loadLb: '40000',
     intervalMi: 25,
   })
+  const [clientErrors, setClientErrors] = useState<FieldErrors>({})
+  const [departureLimits] = useState(() => departureInputLimits())
 
-  const update = (changes: Partial<PlanFormValues>) =>
+  const errorFor = (key: string) => clientErrors[key] ?? fieldErrors[key]
+
+  const update = (changes: Partial<PlanFormValues>) => {
     setValues((previous) => ({ ...previous, ...changes }))
+    setClientErrors((previous) => {
+      const next = { ...previous }
+      for (const field of Object.keys(changes) as (keyof PlanFormValues)[]) {
+        delete next[ERROR_KEYS[field]]
+      }
+      return next
+    })
+  }
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
-    onSubmit(buildPlanRequest(values))
+    const errors = validatePlanForm(values)
+    setClientErrors(errors)
+    if (Object.keys(errors).length === 0) onSubmit(buildPlanRequest(values))
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <Field id="origin" label="From" error={fieldErrors.origin}>
+    <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <Field id="origin" label="From" error={errorFor('origin')}>
         <Input
           id="origin"
-          required
           placeholder="Chicago, IL"
+          aria-invalid={Boolean(errorFor('origin'))}
           value={values.origin}
           onChange={(event) => update({ origin: event.target.value })}
         />
       </Field>
 
-      <Field id="destination" label="To" error={fieldErrors.destination}>
+      <Field id="destination" label="To" error={errorFor('destination')}>
         <Input
           id="destination"
-          required
           placeholder="Denver, CO"
+          aria-invalid={Boolean(errorFor('destination'))}
           value={values.destination}
           onChange={(event) => update({ destination: event.target.value })}
         />
@@ -60,31 +82,41 @@ export function PlanForm({ loading, fieldErrors, onSubmit }: PlanFormProps) {
       <Field
         id="departure"
         label="Departure (your local time)"
-        error={fieldErrors.departure}
+        error={errorFor('departure')}
       >
         <Input
           id="departure"
           type="datetime-local"
-          required
+          className="cursor-pointer"
+          min={departureLimits.min}
+          max={departureLimits.max}
+          aria-invalid={Boolean(errorFor('departure'))}
           value={values.departure}
+          onClick={(event) => event.currentTarget.showPicker?.()}
           onChange={(event) => update({ departure: event.target.value })}
         />
       </Field>
 
-      <Field id="load" label="Load weight (lb)" error={fieldErrors.load_lb}>
+      <Field
+        id="load"
+        label="Load weight (lb)"
+        hint="Cargo only. Max 45,000 lb (80,000 lb with the truck)."
+        error={errorFor('load_lb')}
+      >
         <Input
           id="load"
           type="number"
-          required
+          inputMode="numeric"
           min={0}
           max={MAX_LOAD_LB}
           step={500}
+          aria-invalid={Boolean(errorFor('load_lb'))}
           value={values.loadLb}
           onChange={(event) => update({ loadLb: event.target.value })}
         />
       </Field>
 
-      <Field id="interval" label="Check weather every" error={fieldErrors.interval_mi}>
+      <Field id="interval" label="Check weather every" error={errorFor('interval_mi')}>
         <ToggleGroup
           id="interval"
           type="single"
@@ -113,15 +145,17 @@ export function PlanForm({ loading, fieldErrors, onSubmit }: PlanFormProps) {
 interface FieldProps {
   id: string
   label: string
+  hint?: string
   error?: string[]
   children: ReactNode
 }
 
-function Field({ id, label, error, children }: FieldProps) {
+function Field({ id, label, hint, error, children }: FieldProps) {
   return (
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={id}>{label}</Label>
       {children}
+      {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
       {error?.map((message) => (
         <p key={message} className="text-sm text-destructive">
           {message}
