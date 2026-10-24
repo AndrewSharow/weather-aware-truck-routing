@@ -4,20 +4,17 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import { RiskDot } from '@/components/RiskBadge'
+import { RISK_LABELS } from '@/risk'
+import type { RiskLevel } from '@/types'
 
-const THRESHOLDS = [
-  { condition: 'Wind (mph)', values: ['<25', '25–34', '35–44', '45–54', '≥55'] },
-  {
-    condition: 'Rain (in/hr)',
-    values: ['<0.10', '0.10–0.25', '0.25–0.50', '0.50–1.00', '>1.00'],
-  },
-  {
-    condition: 'Snow (in/hr)',
-    values: ['<0.5', '0.5–1.0', '1.0–2.0', '2.0–3.0', '>3.0'],
-  },
+const THRESHOLDS: { level: RiskLevel; wind: string; rain: string; snow: string }[] = [
+  { level: 'low', wind: '<25', rain: '<0.10', snow: '<0.5' },
+  { level: 'moderate', wind: '25–34', rain: '0.10–0.25', snow: '0.5–1.0' },
+  { level: 'high', wind: '35–44', rain: '0.25–0.50', snow: '1.0–2.0' },
+  { level: 'severe', wind: '45–54', rain: '0.50–1.00', snow: '2.0–3.0' },
+  { level: 'no_travel', wind: '≥55', rain: '>1.00', snow: '>3.0' },
 ]
-
-const LEVELS = ['Low', 'Moderate', 'High', 'Severe', 'No Travel']
 
 export function HowRiskWorks() {
   return (
@@ -32,32 +29,31 @@ export function HowRiskWorks() {
           Its risk is the worst of wind, rain and snow:
         </p>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="text-muted-foreground">
-              <tr>
-                <th className="pr-2 font-normal" />
-                {LEVELS.map((level) => (
-                  <th key={level} className="pr-2 font-normal">
-                    {level}
-                  </th>
-                ))}
+        <table className="w-full text-left">
+          <thead className="text-muted-foreground">
+            <tr>
+              <th className="font-normal">Level</th>
+              <th className="font-normal">Wind mph</th>
+              <th className="font-normal">Rain in/hr</th>
+              <th className="font-normal">Snow in/hr</th>
+            </tr>
+          </thead>
+          <tbody>
+            {THRESHOLDS.map(({ level, wind, rain, snow }) => (
+              <tr key={level}>
+                <td className="py-0.5 pr-2">
+                  <span className="flex items-center gap-1.5 whitespace-nowrap">
+                    <RiskDot level={level} />
+                    {RISK_LABELS[level]}
+                  </span>
+                </td>
+                <td className="pr-2">{wind}</td>
+                <td className="pr-2">{rain}</td>
+                <td>{snow}</td>
               </tr>
-            </thead>
-            <tbody>
-              {THRESHOLDS.map(({ condition, values }) => (
-                <tr key={condition}>
-                  <td className="pr-2 font-medium whitespace-nowrap">{condition}</td>
-                  {values.map((value) => (
-                    <td key={value} className="pr-2 whitespace-nowrap">
-                      {value}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
 
         <div>
           <p className="font-medium">Load rules</p>

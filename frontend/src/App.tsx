@@ -24,8 +24,8 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-dvh flex-col md:flex-row">
-      <aside className="flex w-full flex-col gap-5 overflow-y-auto border-b p-5 md:w-95 md:shrink-0 md:border-r md:border-b-0">
+    <div className="flex min-h-dvh flex-col md:h-dvh md:flex-row">
+      <aside className="flex w-full flex-col gap-5 border-b p-5 md:w-95 md:shrink-0 md:overflow-y-auto md:border-r md:border-b-0">
         <header>
           <h1 className="text-lg font-semibold">Weather-Aware Truck Routing</h1>
           <p className="text-sm text-muted-foreground">
@@ -73,7 +73,7 @@ export default function App() {
         </footer>
       </aside>
 
-      <main className="relative min-h-96 flex-1">
+      <main className="relative h-[75dvh] md:h-auto md:flex-1">
         <MapView
           plan={data}
           selectedRouteId={selectedRouteId}
