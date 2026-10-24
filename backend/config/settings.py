@@ -18,6 +18,8 @@ def env_list(name: str, default: str = "") -> list[str]:
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-insecure-key")
 DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+if render_host := os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
+    ALLOWED_HOSTS.append(render_host)
 
 HERE_API_KEY = os.environ.get("HERE_API_KEY", "")
 
