@@ -28,7 +28,7 @@ checkpoint interval (10 / 25 / 50 miles). The app:
 | Part | Choice |
 |---|---|
 | Backend | Python 3.12, Django 5.2, Django REST Framework |
-| Frontend | React, TypeScript, Vite, Tailwind CSS |
+| Frontend | React, TypeScript, Vite, Tailwind CSS, shadcn/ui |
 | Map | MapLibre GL JS (`react-map-gl`) + OpenFreeMap tiles |
 | Routing + geocoding | HERE Routing API v8 (truck mode) + HERE Geocoding & Search |
 | Weather | Open-Meteo hourly forecast (in production through a small Cloudflare Worker proxy, `weather-proxy/`, because Open-Meteo rate-limits shared host IPs) |
@@ -77,7 +77,18 @@ python manage.py runserver
 
 Check: `curl localhost:8000/api/health` → `{"status": "ok"}`
 
-Tests: `python manage.py test` · CI (GitHub Actions) runs the tests and the
+Frontend (needs Node 20+):
+
+```bash
+cd frontend
+npm install
+cp .env.example .env   # VITE_API_URL=http://localhost:8000
+npm run dev            # http://localhost:5173
+```
+
+Checks: `npm run lint`, `npm test`, `npm run build`.
+
+Backend tests: `python manage.py test` · CI (GitHub Actions) runs the tests and the
 type check on every push; Render deploys only after CI passes.
 
 ## API
