@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AlertCircle, Clock } from 'lucide-react'
 import { MapView } from '@/components/MapView'
 import { PlanForm } from '@/components/PlanForm'
+import { RouteList } from '@/components/RouteList'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { usePlan } from '@/hooks/usePlan'
 import type { PlanRequest } from '@/types'
@@ -51,10 +52,11 @@ export default function App() {
         )}
 
         {data && (
-          <p className="text-sm">
-            {data.routes.length} routes · recommended {data.recommended_route_id} (
-            {data.recommendation_reason}) · selected {selectedRouteId}
-          </p>
+          <RouteList
+            plan={data}
+            selectedRouteId={selectedRouteId}
+            onSelectRoute={setChosenRouteId}
+          />
         )}
       </aside>
 

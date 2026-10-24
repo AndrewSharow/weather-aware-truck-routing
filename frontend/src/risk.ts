@@ -30,3 +30,19 @@ export const RISK_LABELS: Record<RiskLevel, string> = {
 export function levelFromScore(score: number | null): RiskLevel {
   return score === null ? 'unknown' : RISK_LEVELS[score]
 }
+
+export interface RiskSegment {
+  level: RiskLevel
+  miles: number
+  percent: number
+}
+
+export function riskSegments(milesByLevel: Record<RiskLevel, number>): RiskSegment[] {
+  const total = RISK_LEVELS.reduce((sum, level) => sum + milesByLevel[level], 0)
+  if (!total) return []
+  return RISK_LEVELS.filter((level) => milesByLevel[level] > 0).map((level) => ({
+    level,
+    miles: milesByLevel[level],
+    percent: (milesByLevel[level] / total) * 100,
+  }))
+}
