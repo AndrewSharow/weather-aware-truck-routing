@@ -1,5 +1,7 @@
+import { X } from 'lucide-react'
 import { Popup } from 'react-map-gl/maplibre'
 import { RiskBadge } from '@/components/RiskBadge'
+import { Button } from '@/components/ui/button'
 import { formatTime, formatValue } from '@/format'
 import type { Checkpoint } from '@/types'
 
@@ -20,15 +22,25 @@ export function CheckpointPopup({ routeId, checkpoint, onClose }: CheckpointPopu
       anchor="bottom"
       offset={10}
       closeOnClick={false}
+      closeButton={false}
       onClose={onClose}
       maxWidth="280px"
     >
-      <div className="flex flex-col gap-2 p-1 text-sm">
-        <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-2 text-sm">
+        <div className="flex items-center gap-2">
           <span className="font-semibold">
             Route {routeId} · mile {Math.round(checkpoint.mile)}
           </span>
           <RiskBadge level={checkpoint.risk} />
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            className="-mr-2 ml-auto"
+            aria-label="Close"
+            onClick={onClose}
+          >
+            <X />
+          </Button>
         </div>
         <p className="text-muted-foreground">ETA {formatTime(checkpoint.eta)}</p>
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
