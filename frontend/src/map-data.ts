@@ -14,6 +14,7 @@ export type Bounds = [[number, number], [number, number]]
 const PIXELS_PER_DEGREE_AT_ZOOM_0 = 512 / 360
 const MAX_ZOOM = 20
 const DEFAULT_GRID_SPACING = 0.5
+const HEATMAP_OVERLAP = 1.4
 
 export function routesGeoJson(
   routes: Route[],
@@ -110,7 +111,7 @@ export function gridSpacing(points: HeatmapPoint[]): number {
 }
 
 export function heatmapRadiusExpression(spacingDegrees: number): ExpressionSpecification {
-  const radiusAtZoom0 = spacingDegrees * PIXELS_PER_DEGREE_AT_ZOOM_0
+  const radiusAtZoom0 = spacingDegrees * PIXELS_PER_DEGREE_AT_ZOOM_0 * HEATMAP_OVERLAP
   return [
     'interpolate',
     ['exponential', 2],

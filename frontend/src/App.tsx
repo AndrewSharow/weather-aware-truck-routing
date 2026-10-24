@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { AlertCircle, Clock } from 'lucide-react'
+import { AlertCircle, Clock, MousePointerClick } from 'lucide-react'
 import { HeatmapControl } from '@/components/HeatmapControl'
+import { HowRiskWorks } from '@/components/HowRiskWorks'
+import { Legend } from '@/components/Legend'
 import { MapView } from '@/components/MapView'
 import { PlanForm } from '@/components/PlanForm'
 import { RouteList } from '@/components/RouteList'
@@ -62,6 +64,13 @@ export default function App() {
             onSelectRoute={setChosenRouteId}
           />
         )}
+
+        <HowRiskWorks />
+
+        <footer className="mt-auto text-xs text-muted-foreground">
+          Planning aid only: it does not guarantee that a route is safe or legally
+          compliant. Routes: HERE (truck mode). Weather: Open-Meteo.
+        </footer>
       </aside>
 
       <main className="relative min-h-96 flex-1">
@@ -72,6 +81,18 @@ export default function App() {
           heatmapVisible={heatmapVisible}
           onSelectRoute={setChosenRouteId}
         />
+        <div className="absolute top-3 left-3">
+          <Legend />
+        </div>
+        {!data && !loading && (
+          <div className="pointer-events-none absolute inset-x-0 top-1/3 flex justify-center px-4">
+            <p className="flex items-center gap-2 rounded-xl bg-background/95 px-4 py-3 text-sm shadow-lg ring-1 ring-foreground/10">
+              <MousePointerClick className="size-4 shrink-0" />
+              Enter a trip on the left to see routes, weather checkpoints and the risk
+              heatmap.
+            </p>
+          </div>
+        )}
         {data && (
           <div className="absolute bottom-8 left-3 w-80 max-w-[calc(100%-1.5rem)]">
             <HeatmapControl
