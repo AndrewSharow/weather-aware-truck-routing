@@ -60,9 +60,6 @@ unit tests; the API clients are tested with recorded responses.
 | Hosting | Render (backend, `render.yaml`), Vercel (frontend) |
 | CI/CD | GitHub Actions; Render deploys only after CI passes |
 
-All external API calls go through the backend, so the HERE key never reaches
-the browser.
-
 ## Risk rules
 
 | Condition | Low | Moderate | High | Severe | No Travel |
@@ -185,4 +182,3 @@ Errors: `{"error": "<code>", "message": "..."}` — `invalid_input` (400, plus
 - Load weight changes the route only where roads have weight limits; on
   interstates it mainly affects the risk rules (strong wind).
 - Forecasts get less accurate further ahead; free hosting sleeps when idle.
-- Open-Meteo's free API is for non-commercial use.
