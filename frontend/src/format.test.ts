@@ -4,6 +4,7 @@ import {
   formatDuration,
   formatMiles,
   formatTime,
+  formatValue,
   hourLabel,
   localInputToUtcIso,
 } from './format'
@@ -51,5 +52,13 @@ describe('local departure input', () => {
   it('rolls over midnight', () => {
     const now = new Date('2026-10-24T23:40:00Z')
     expect(defaultDepartureInput(now)).toBe('2026-10-25T00:00')
+  })
+})
+
+describe('formatValue', () => {
+  it('rounds with unit and shows missing data', () => {
+    expect(formatValue(12.345, 'mph', 0)).toBe('12 mph')
+    expect(formatValue(0.1234, 'in/hr', 2)).toBe('0.12 in/hr')
+    expect(formatValue(null, 'mph', 0)).toBe('no data')
   })
 })

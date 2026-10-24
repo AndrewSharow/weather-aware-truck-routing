@@ -11,6 +11,10 @@ export function formatDuration(seconds: number): string {
   return hours ? `${hours} h ${minutes} min` : `${minutes} min`
 }
 
+export function formatValue(value: number | null, unit: string, digits: number): string {
+  return value === null ? 'no data' : `${value.toFixed(digits)} ${unit}`
+}
+
 export function formatTime(iso: string, timeZone?: string): string {
   return new Intl.DateTimeFormat('en-US', {
     weekday: 'short',

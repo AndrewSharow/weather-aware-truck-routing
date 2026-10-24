@@ -8,12 +8,19 @@ import Map, {
   type MapLayerMouseEvent,
   type MapRef,
 } from 'react-map-gl/maplibre'
-import { routeBounds, routesGeoJson } from '@/map-data'
+import { CheckpointPopup } from '@/components/CheckpointPopup'
+import {
+  checkpointsGeoJson,
+  riskColorExpression,
+  routeBounds,
+  routesGeoJson,
+} from '@/map-data'
 import type { PlanResponse } from '@/types'
 
 const MAP_STYLE = 'https://tiles.openfreemap.org/styles/positron'
 const USA_VIEW = { longitude: -98.5, latitude: 39.5, zoom: 3.6 }
-const ROUTE_LAYERS = ['routes-other', 'routes-selected']
+const INTERACTIVE_LAYERS = ['checkpoints', 'routes-other', 'routes-selected']
+const RISK_COLOR = riskColorExpression()
 const SELECTED_COLOR = '#2563eb'
 const OTHER_COLOR = '#94a3b8'
 
@@ -26,7 +33,9 @@ interface MapViewProps {
 export function MapView({ plan, selectedRouteId, onSelectRoute }: MapViewProps) {
   const mapRef = useRef<MapRef>(null)
   const [hovering, setHovering] = useState(false)
+  const [popup, setPopup] = useState<OpenPopup | null>(null)
   const routes = useMemo(() => routesGeoJson(plan?.routes ?? []), [plan])
+  const checkpoints = useMemo(() => checkpointsGeoJson(plan?.routes ?? []), [plan])
 
   useEffect(() => {
     const bounds = routeBounds(plan?.routes ?? [])
@@ -35,10 +44,26 @@ export function MapView({ plan, selectedRouteId, onSelectRoute }: MapViewProps) 
 
   const isSelected: ExpressionSpecification = ['==', ['get', 'id'], selectedRouteId ?? '']
   const isOther: ExpressionSpecification = ['!', isSelected]
+  const onSelectedRoute: ExpressionSpecification = [
+    '==',
+    ['get', 'routeId'],
+    selectedRouteId ?? '',
+  ]
+
+  const popupCheckpoint =
+    popup && popup.plan === plan && popup.routeId === selectedRouteId
+      ? plan?.routes.find((route) => route.id === popup.routeId)?.checkpoints[popup.index]
+      : undefined
 
   const handleClick = (event: MapLayerMouseEvent) => {
-    const routeId = event.features?.[0]?.properties?.id
-    if (typeof routeId === 'string') onSelectRoute(routeId)
+    const feature = event.features?.[0]
+    if (!feature || !plan) return
+    if (feature.layer.id === 'checkpoints') {
+      const { routeId, index } = feature.properties
+      setPopup({ plan, routeId, index })
+    } else {
+      onSelectRoute(feature.properties.id)
+    }
   }
 
   return (
@@ -46,7 +71,7 @@ export function MapView({ plan, selectedRouteId, onSelectRoute }: MapViewProps) 
       ref={mapRef}
       initialViewState={USA_VIEW}
       mapStyle={MAP_STYLE}
-      interactiveLayerIds={ROUTE_LAYERS}
+      interactiveLayerIds={INTERACTIVE_LAYERS}
       cursor={hovering ? 'pointer' : 'grab'}
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
@@ -79,6 +104,28 @@ export function MapView({ plan, selectedRouteId, onSelectRoute }: MapViewProps) 
         />
       </Source>
 
+      <Source id="checkpoints" type="geojson" data={checkpoints}>
+        <Layer
+          id="checkpoints"
+          type="circle"
+          filter={onSelectedRoute}
+          paint={{
+            'circle-color': RISK_COLOR,
+            'circle-radius': 6,
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 1.5,
+          }}
+        />
+      </Source>
+
+      {popupCheckpoint && popup && (
+        <CheckpointPopup
+          routeId={popup.routeId}
+          checkpoint={popupCheckpoint}
+          onClose={() => setPopup(null)}
+        />
+      )}
+
       {plan && (
         <>
           <PlaceMarker lon={plan.origin.lon} lat={plan.origin.lat} label="A" />
@@ -87,6 +134,12 @@ export function MapView({ plan, selectedRouteId, onSelectRoute }: MapViewProps) 
       )}
     </Map>
   )
+}
+
+interface OpenPopup {
+  plan: PlanResponse
+  routeId: string
+  index: number
 }
 
 function PlaceMarker({ lon, lat, label }: { lon: number; lat: number; label: string }) {

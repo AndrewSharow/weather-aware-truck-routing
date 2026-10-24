@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { routeBounds, routesGeoJson } from './map-data'
-import type { Route } from './types'
+import {
+  checkpointsGeoJson,
+  riskColorExpression,
+  routeBounds,
+  routesGeoJson,
+} from './map-data'
+import { RISK_COLORS } from './risk'
+import type { Checkpoint, Route } from './types'
 
 function route(id: string, geometry: [number, number][]): Route {
   return {
@@ -57,5 +63,44 @@ describe('routeBounds', () => {
 
   it('returns null without routes', () => {
     expect(routeBounds([])).toBeNull()
+  })
+})
+
+function checkpoint(mile: number, risk: Checkpoint['risk']): Checkpoint {
+  return {
+    mile,
+    lat: 40,
+    lon: -90 - mile / 100,
+    eta: '2026-10-24T13:00:00+00:00',
+    wind_mph: 5,
+    gust_mph: 8,
+    rain_in_hr: 0,
+    snow_in_hr: 0,
+    risk,
+  }
+}
+
+describe('checkpointsGeoJson', () => {
+  it('makes a point per checkpoint with route id, index and risk', () => {
+    const routes = [
+      { ...ROUTES[0], checkpoints: [checkpoint(25, 'low'), checkpoint(50, 'severe')] },
+      { ...ROUTES[1], checkpoints: [checkpoint(25, 'unknown')] },
+    ]
+    const geojson = checkpointsGeoJson(routes)
+    expect(geojson.features.map((f) => f.properties)).toEqual([
+      { routeId: 'A', index: 0, risk: 'low' },
+      { routeId: 'A', index: 1, risk: 'severe' },
+      { routeId: 'B', index: 0, risk: 'unknown' },
+    ])
+    expect(geojson.features[1].geometry.coordinates).toEqual([-90.5, 40])
+  })
+})
+
+describe('riskColorExpression', () => {
+  it('maps every level to its color with unknown as fallback', () => {
+    const expression = riskColorExpression()
+    expect(expression.slice(0, 2)).toEqual(['match', ['get', 'risk']])
+    expect(expression).toContain(RISK_COLORS.severe)
+    expect(expression.at(-1)).toBe(RISK_COLORS.unknown)
   })
 })
