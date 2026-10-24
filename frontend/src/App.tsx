@@ -1,10 +1,20 @@
+import { useState } from 'react'
 import { AlertCircle, Clock } from 'lucide-react'
+import { MapView } from '@/components/MapView'
 import { PlanForm } from '@/components/PlanForm'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { usePlan } from '@/hooks/usePlan'
+import type { PlanRequest } from '@/types'
 
 export default function App() {
   const { submit, data, error, loading, slow } = usePlan()
+  const [chosenRouteId, setChosenRouteId] = useState<string | null>(null)
+  const selectedRouteId = chosenRouteId ?? data?.recommended_route_id ?? null
+
+  const handleSubmit = (request: PlanRequest) => {
+    setChosenRouteId(null)
+    void submit(request)
+  }
 
   return (
     <div className="flex h-dvh flex-col md:flex-row">
@@ -16,7 +26,11 @@ export default function App() {
           </p>
         </header>
 
-        <PlanForm loading={loading} fieldErrors={error?.fields ?? {}} onSubmit={submit} />
+        <PlanForm
+          loading={loading}
+          fieldErrors={error?.fields ?? {}}
+          onSubmit={handleSubmit}
+        />
 
         {slow && (
           <Alert>
@@ -39,13 +53,17 @@ export default function App() {
         {data && (
           <p className="text-sm">
             {data.routes.length} routes · recommended {data.recommended_route_id} (
-            {data.recommendation_reason})
+            {data.recommendation_reason}) · selected {selectedRouteId}
           </p>
         )}
       </aside>
 
-      <main className="flex flex-1 items-center justify-center bg-muted text-muted-foreground">
-        Map comes in step 5d
+      <main className="relative min-h-96 flex-1">
+        <MapView
+          plan={data}
+          selectedRouteId={selectedRouteId}
+          onSelectRoute={setChosenRouteId}
+        />
       </main>
     </div>
   )
