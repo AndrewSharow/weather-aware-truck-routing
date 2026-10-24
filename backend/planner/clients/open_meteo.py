@@ -14,7 +14,8 @@ from planner.sampling import Point
 logger = logging.getLogger(__name__)
 
 HOURLY_FIELDS = ["wind_speed_10m", "wind_gusts_10m", "rain", "showers", "snowfall"]
-TIMEOUT_S = 20
+TIMEOUT_S = 15
+RETRIES = 1
 BATCH_SIZE = 100
 FORECAST_HORIZON = timedelta(days=15)
 CACHE_SECONDS = 3600
@@ -98,12 +99,7 @@ def fetch_batch(
         "start_hour": first_hour.strftime(HOUR_FORMAT),
         "end_hour": last_hour.strftime(HOUR_FORMAT),
     }
-    try:
-        url = f"{settings.OPEN_METEO_URL}/v1/forecast"
-        response = requests.get(url, params=params, timeout=TIMEOUT_S)
-    except requests.RequestException as error:
-        logger.warning("Open-Meteo request failed: %s", type(error).__name__)
-        raise weather_unavailable() from None
+    response = get_with_retry(f"{settings.OPEN_METEO_URL}/v1/forecast", params)
     if response.status_code != 200:
         logger.warning("Open-Meteo returned status %s", response.status_code)
         if response.status_code == 429:
@@ -115,6 +111,25 @@ def fetch_batch(
     if len(locations) != len(cells):
         raise weather_unavailable()
     return locations
+
+
+def get_with_retry(url: str, params: dict[str, Any]) -> requests.Response:
+    for _ in range(RETRIES):
+        try:
+            response = requests.get(url, params=params, timeout=TIMEOUT_S)
+            if response.status_code < 500:
+                return response
+            status = response.status_code
+            logger.warning("Open-Meteo returned status %s, retrying", status)
+        except requests.RequestException as error:
+            reason = type(error).__name__
+            logger.warning("Open-Meteo request failed: %s, retrying", reason)
+
+    try:
+        return requests.get(url, params=params, timeout=TIMEOUT_S)
+    except requests.RequestException as error:
+        logger.warning("Open-Meteo request failed: %s", type(error).__name__)
+        raise weather_unavailable() from None
 
 
 def parse_hourly(hourly: dict[str, list[Any]]) -> dict[datetime, HourlyWeather]:

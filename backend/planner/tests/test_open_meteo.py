@@ -194,6 +194,33 @@ class FailureTests(SimpleTestCase):
         self.assertIn("busy", error.message)
         self.assertIn("429", log)
 
+    def test_retries_once_after_timeout(self, get: Mock) -> None:
+        get.side_effect = [requests.Timeout(), response(three_points())]
+        with self.assertLogs("planner.clients.open_meteo", "WARNING") as logs:
+            forecast = fetch_forecast(POINTS, START, END, now=NOW)
+        self.assertEqual(get.call_count, 2)
+        self.assertIsNotNone(forecast.at(POINTS[0], START).wind_mph)
+        self.assertIn("retrying", logs.output[0])
+
+    def test_retries_once_after_server_error(self, get: Mock) -> None:
+        get.side_effect = [response({}, status=503), response(three_points())]
+        with self.assertLogs("planner.clients.open_meteo", "WARNING"):
+            fetch_forecast(POINTS, START, END, now=NOW)
+        self.assertEqual(get.call_count, 2)
+
+    def test_gives_up_after_second_timeout(self, get: Mock) -> None:
+        get.side_effect = requests.Timeout()
+        self.assert_unavailable("Timeout")
+        self.assertEqual(get.call_count, 2)
+
+    def test_rate_limit_and_bad_request_are_not_retried(self, get: Mock) -> None:
+        for status in (429, 400):
+            with self.subTest(status=status):
+                get.reset_mock()
+                get.return_value = response({"error": True}, status=status)
+                self.fetch_error()
+                self.assertEqual(get.call_count, 1)
+
     def test_wrong_number_of_locations(self, get: Mock) -> None:
         get.return_value = response(three_points()[:2])
         with self.assertRaises(PlannerError) as error:
