@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { AlertCircle, Clock } from 'lucide-react'
+import { HeatmapControl } from '@/components/HeatmapControl'
 import { MapView } from '@/components/MapView'
 import { PlanForm } from '@/components/PlanForm'
 import { RouteList } from '@/components/RouteList'
@@ -10,10 +11,13 @@ import type { PlanRequest } from '@/types'
 export default function App() {
   const { submit, data, error, loading, slow } = usePlan()
   const [chosenRouteId, setChosenRouteId] = useState<string | null>(null)
+  const [heatmapHour, setHeatmapHour] = useState(0)
+  const [heatmapVisible, setHeatmapVisible] = useState(true)
   const selectedRouteId = chosenRouteId ?? data?.recommended_route_id ?? null
 
   const handleSubmit = (request: PlanRequest) => {
     setChosenRouteId(null)
+    setHeatmapHour(0)
     void submit(request)
   }
 
@@ -64,8 +68,21 @@ export default function App() {
         <MapView
           plan={data}
           selectedRouteId={selectedRouteId}
+          heatmapHour={heatmapHour}
+          heatmapVisible={heatmapVisible}
           onSelectRoute={setChosenRouteId}
         />
+        {data && (
+          <div className="absolute bottom-8 left-3 w-80 max-w-[calc(100%-1.5rem)]">
+            <HeatmapControl
+              start={data.heatmap.start}
+              hour={heatmapHour}
+              visible={heatmapVisible}
+              onHourChange={setHeatmapHour}
+              onVisibleChange={setHeatmapVisible}
+            />
+          </div>
+        )}
       </main>
     </div>
   )

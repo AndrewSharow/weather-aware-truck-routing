@@ -1,7 +1,7 @@
 import type { FeatureCollection, LineString, Point } from 'geojson'
 import type { ExpressionSpecification } from 'maplibre-gl'
 import { RISK_COLORS } from './risk'
-import type { RiskLevel, Route } from './types'
+import type { HeatmapPoint, RiskLevel, Route } from './types'
 
 export interface CheckpointProperties {
   routeId: string
@@ -10,6 +10,10 @@ export interface CheckpointProperties {
 }
 
 export type Bounds = [[number, number], [number, number]]
+
+const PIXELS_PER_DEGREE_AT_ZOOM_0 = 512 / 360
+const MAX_ZOOM = 20
+const DEFAULT_GRID_SPACING = 0.5
 
 export function routesGeoJson(
   routes: Route[],
@@ -65,5 +69,55 @@ export function riskColorExpression(): ExpressionSpecification {
     'no_travel',
     RISK_COLORS.no_travel,
     RISK_COLORS.unknown,
+  ]
+}
+
+export function heatmapGeoJson(
+  points: HeatmapPoint[],
+): FeatureCollection<Point, { risk: number[] }> {
+  return {
+    type: 'FeatureCollection',
+    features: points.map((point) => ({
+      type: 'Feature',
+      properties: { risk: point.risk.map((score) => score ?? -1) },
+      geometry: { type: 'Point', coordinates: [point.lon, point.lat] },
+    })),
+  }
+}
+
+export function heatmapColorExpression(hour: number): ExpressionSpecification {
+  return [
+    'match',
+    ['at', hour, ['array', 'number', ['get', 'risk']]],
+    0,
+    RISK_COLORS.low,
+    1,
+    RISK_COLORS.moderate,
+    2,
+    RISK_COLORS.high,
+    3,
+    RISK_COLORS.severe,
+    4,
+    RISK_COLORS.no_travel,
+    RISK_COLORS.unknown,
+  ]
+}
+
+export function gridSpacing(points: HeatmapPoint[]): number {
+  const lats = [...new Set(points.map((point) => point.lat))].sort((a, b) => a - b)
+  const steps = lats.slice(1).map((lat, i) => lat - lats[i])
+  return steps.length ? Math.min(...steps) : DEFAULT_GRID_SPACING
+}
+
+export function heatmapRadiusExpression(spacingDegrees: number): ExpressionSpecification {
+  const radiusAtZoom0 = spacingDegrees * PIXELS_PER_DEGREE_AT_ZOOM_0
+  return [
+    'interpolate',
+    ['exponential', 2],
+    ['zoom'],
+    0,
+    radiusAtZoom0,
+    MAX_ZOOM,
+    radiusAtZoom0 * 2 ** MAX_ZOOM,
   ]
 }

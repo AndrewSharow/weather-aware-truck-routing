@@ -11,6 +11,10 @@ import Map, {
 import { CheckpointPopup } from '@/components/CheckpointPopup'
 import {
   checkpointsGeoJson,
+  gridSpacing,
+  heatmapColorExpression,
+  heatmapGeoJson,
+  heatmapRadiusExpression,
   riskColorExpression,
   routeBounds,
   routesGeoJson,
@@ -27,15 +31,29 @@ const OTHER_COLOR = '#94a3b8'
 interface MapViewProps {
   plan: PlanResponse | null
   selectedRouteId: string | null
+  heatmapHour: number
+  heatmapVisible: boolean
   onSelectRoute: (routeId: string) => void
 }
 
-export function MapView({ plan, selectedRouteId, onSelectRoute }: MapViewProps) {
+export function MapView({
+  plan,
+  selectedRouteId,
+  heatmapHour,
+  heatmapVisible,
+  onSelectRoute,
+}: MapViewProps) {
   const mapRef = useRef<MapRef>(null)
   const [hovering, setHovering] = useState(false)
   const [popup, setPopup] = useState<OpenPopup | null>(null)
   const routes = useMemo(() => routesGeoJson(plan?.routes ?? []), [plan])
   const checkpoints = useMemo(() => checkpointsGeoJson(plan?.routes ?? []), [plan])
+  const heatmap = useMemo(() => heatmapGeoJson(plan?.heatmap.points ?? []), [plan])
+  const heatmapRadius = useMemo(
+    () => heatmapRadiusExpression(gridSpacing(plan?.heatmap.points ?? [])),
+    [plan],
+  )
+  const heatmapColor = useMemo(() => heatmapColorExpression(heatmapHour), [heatmapHour])
 
   useEffect(() => {
     const bounds = routeBounds(plan?.routes ?? [])
@@ -79,6 +97,20 @@ export function MapView({ plan, selectedRouteId, onSelectRoute }: MapViewProps) 
       style={{ width: '100%', height: '100%' }}
     >
       <NavigationControl position="top-right" showCompass={false} />
+
+      <Source id="heatmap" type="geojson" data={heatmap}>
+        <Layer
+          id="heatmap"
+          type="circle"
+          layout={{ visibility: heatmapVisible ? 'visible' : 'none' }}
+          paint={{
+            'circle-color': heatmapColor,
+            'circle-radius': heatmapRadius,
+            'circle-blur': 1,
+            'circle-opacity': 0.55,
+          }}
+        />
+      </Source>
 
       <Source id="routes" type="geojson" data={routes}>
         <Layer
