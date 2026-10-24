@@ -2,7 +2,7 @@ import { HelpCircle, OctagonAlert, Star } from 'lucide-react'
 import { RiskBar } from '@/components/RiskBar'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatDuration, formatMiles } from '@/format'
+import { formatDuration, formatMiles, formatTime } from '@/format'
 import { cn } from '@/lib/utils'
 import type { Route } from '@/types'
 
@@ -22,6 +22,7 @@ export function RouteCard({
   onSelect,
 }: RouteCardProps) {
   const { miles_by_level: miles, has_no_travel: hasNoTravel } = route.summary
+  const arrival = route.checkpoints.at(-1)?.eta
 
   return (
     <button
@@ -49,6 +50,7 @@ export function RouteCard({
           </CardTitle>
           <p className="text-muted-foreground">
             {formatMiles(route.distance_mi)} · {formatDuration(route.duration_s)}
+            {arrival && <> · arrives {formatTime(arrival)}</>}
           </p>
         </CardHeader>
 
