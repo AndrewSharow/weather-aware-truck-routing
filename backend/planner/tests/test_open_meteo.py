@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import requests
 from django.core.cache import cache
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 
 from planner.clients.open_meteo import (
     HourlyWeather,
@@ -65,6 +65,13 @@ class FetchForecastTests(SimpleTestCase):
         self.assertEqual(weather.wind_mph, expected["wind_speed_10m"][1])
         self.assertEqual(weather.gust_mph, expected["wind_gusts_10m"][1])
         self.assertEqual(weather.snow_in_hr, expected["snowfall"][1])
+
+    @override_settings(OPEN_METEO_URL="https://proxy.example.workers.dev")
+    def test_uses_configured_url(self, get: Mock) -> None:
+        get.return_value = response(three_points())
+        self.fetch()
+        url = get.call_args.args[0]
+        self.assertEqual(url, "https://proxy.example.workers.dev/v1/forecast")
 
     def test_requests_mph_inch_and_utc(self, get: Mock) -> None:
         get.return_value = response(three_points())

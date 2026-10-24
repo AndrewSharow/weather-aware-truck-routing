@@ -22,6 +22,7 @@ if render_host := os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
     ALLOWED_HOSTS.append(render_host)
 
 HERE_API_KEY = os.environ.get("HERE_API_KEY", "")
+OPEN_METEO_URL = os.environ.get("OPEN_METEO_URL", "https://api.open-meteo.com")
 
 INSTALLED_APPS = [
     "corsheaders",

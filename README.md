@@ -31,7 +31,7 @@ checkpoint interval (10 / 25 / 50 miles). The app:
 | Frontend | React, TypeScript, Vite, Tailwind CSS |
 | Map | MapLibre GL JS (`react-map-gl`) + OpenFreeMap tiles |
 | Routing + geocoding | HERE Routing API v8 (truck mode) + HERE Geocoding & Search |
-| Weather | Open-Meteo hourly forecast |
+| Weather | Open-Meteo hourly forecast (in production through a small Cloudflare Worker proxy, `weather-proxy/`, because Open-Meteo rate-limits shared host IPs) |
 | Hosting | Render (backend, `render.yaml`), Vercel (frontend) |
 
 All external API calls go through the backend, so the HERE key never reaches
@@ -77,7 +77,8 @@ python manage.py runserver
 
 Check: `curl localhost:8000/api/health` → `{"status": "ok"}`
 
-Tests: `python manage.py test`
+Tests: `python manage.py test` · CI (GitHub Actions) runs the tests and the
+type check on every push; Render deploys only after CI passes.
 
 ## API
 

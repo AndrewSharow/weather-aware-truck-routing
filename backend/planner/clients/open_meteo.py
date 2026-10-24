@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import requests
+from django.conf import settings
 from django.core.cache import cache
 
 from planner.errors import PlannerError
@@ -12,7 +13,6 @@ from planner.sampling import Point
 
 logger = logging.getLogger(__name__)
 
-FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 HOURLY_FIELDS = ["wind_speed_10m", "wind_gusts_10m", "rain", "showers", "snowfall"]
 TIMEOUT_S = 20
 BATCH_SIZE = 100
@@ -99,7 +99,8 @@ def fetch_batch(
         "end_hour": last_hour.strftime(HOUR_FORMAT),
     }
     try:
-        response = requests.get(FORECAST_URL, params=params, timeout=TIMEOUT_S)
+        url = f"{settings.OPEN_METEO_URL}/v1/forecast"
+        response = requests.get(url, params=params, timeout=TIMEOUT_S)
     except requests.RequestException as error:
         logger.warning("Open-Meteo request failed: %s", type(error).__name__)
         raise weather_unavailable() from None
