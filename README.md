@@ -3,11 +3,15 @@
 A React + Django web app that helps a truck driver pick the safest route by
 weather, load weight and travel time.
 
+**Live app:** https://weather-aware-truck-routing-zeta-eight.vercel.app
+· **API:** https://weather-routing-api-ck8q.onrender.com/api/health
+(free hosting: the first request after idle can take up to a minute)
+
 > Planning aid only. It does not guarantee that a route is safe or legally
 > compliant.
 
-**Status:** in progress. The backend API works end to end and is tested;
-the frontend is next.
+**Status:** in progress. Backend and frontend are deployed and tested; the
+weather heatmap is next.
 
 ## What it does
 
